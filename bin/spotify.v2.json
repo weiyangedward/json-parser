@@ -1,0 +1,397 @@
+{
+  "PluginName": "spotify",
+  "Version": "2",
+
+  "StateModels": [
+    {
+      "StateId": "SpotifyMain",
+      "Transitions": [
+        {
+          "From": "HOME",
+          "Actions": [
+            {
+              "Type": "Action.ClearTask",
+              "ActivityName": "com.spotify.music.MainActivity",
+              "Description": "Launch spotify application"
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "legacy_header_sticky_inner_recycler"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 12000
+    },
+
+    {
+      "StateId": "SpotifySearch",
+      "Transitions": [
+        {
+          "From": "SpotifyMain",
+          "Actions": [
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.FindFirstByViewId",
+                "ViewId": "search_tab"
+              }
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "search_placeholder"
+            }
+          }
+        ]
+      }
+    },
+
+    {
+      "StateId": "SpotifySearchResult",
+      "Transitions": [
+        {
+          "From": "SpotifySearch",
+          "Actions": [
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.FindFirstByViewId",
+                "ViewId": "search_background"
+              }
+            },
+            {
+              "Type": "Action.SetTextFromParameter",
+              "Target": {
+                "Type": "Selector.FindFirstByViewId",
+                "ViewId": "query"
+              },
+              "ParameterName": "SearchKeyword",
+              "NLGs": {
+                "Failure.ParameterNotExists": "Spotify-SearchKeyword.Exist.no"
+              }
+            }
+          ]
+
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "data"
+            }
+          }
+        ]
+      }, "ValidationTimeoutMS": 1000
+    },
+
+    {
+      "StateId": "SpotifySearchFound",
+      "Transitions": [
+        {
+          "From": "SpotifySearchResult",
+          "Actions": [
+            {
+              "Type": "Action.InteractWithUser",
+              "WaitUserInput": true,
+              "SetAppVisible": true,
+              "SetAppTouchable": true,
+              "PostCondition": {
+                "Type": "Validator.And",
+                "Validators": [
+                  {
+                    "Type": "Validator.TargetExists",
+                    "Target": {
+                      "Type": "Selector.FindFirstByViewId",
+                      "ViewId": "hubs_header_toggle_button"
+                    }
+                  }
+                ]
+              },
+              "PostConditionTimeoutMS": 20000,
+              "NoticeNlg": "Spotify-Select-Result.Exist.no"
+            },
+            {
+              "Type": "Action.InteractWithUser",
+              "SetAppVisible": false,
+              "SetAppTouchable": false
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "hubs_header_toggle_button"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "StateId": "SpotifyFollowingStation",
+      "Transitions": [
+        {
+          "From": "SpotifySearchFound",
+          "Actions": [
+            {
+              "Type": "Action.NoAction",
+              "PostCondition": {
+                "Type": "Validator.Not",
+                "Validator": {
+                  "Type": "Validator.TargetExists",
+                  "Target": {
+                    "Type": "Selector.FindFirstByText",
+                    "Text": "FOLLOWING"
+                  }
+                },
+                "NLGs": {
+                  "Failure": "SpotifyFollowingStation-SearchKeyword.match.yes"
+                }
+              }
+            },
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.FindFirstByText",
+                "Text": "FOLLOW"
+              },
+              "ActionDelayTimeoutMS": 2000
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByText",
+              "Text": "FOLLOWING"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 2000
+    },
+
+    {
+      "StateId": "SpotifyMainMusicPaused",
+      "Transitions": [
+        {
+          "From": "SELF",
+          "Actions": [
+            {
+              "Type": "Action.NoAction",
+              "Description": "Spotify MusicPaused"
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "playPause"
+            }
+          },
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByText",
+              "Text": "Pause"
+            },
+            "NLGs": {
+              "Failure": "Spotify.signin.no"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 2000
+    },
+    {
+      "StateId": "SpotifyMainMusicPlaying",
+      "Transitions": [
+        {
+          "From": "SpotifyMainMusicPaused",
+          "Actions": [
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.FindFirstByViewId",
+                "ViewId": "playPause"
+              }
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByText",
+              "Text": "Play"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 2000
+    },
+
+    {
+      "StateId": "SpotifySongPlaying",
+      "Transitions": [
+        {
+          "From": "SELF",
+          "Actions": [
+            {
+              "Type": "Action.NoAction",
+              "Description": "music paying on spotify"
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "btn_play"
+            }
+          },
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByText",
+              "Text": "Pause"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 2000
+    },
+    {
+      "StateId": "SpotifySongOption",
+      "Transitions": [
+        {
+          "From": "SpotifySongPlaying",
+          "Actions": [
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.FindFirstByViewId",
+                "ViewId": "quickActionDotDotDot"
+              }
+            },
+            {
+              "Type": "Action.Click",
+              "Target": {
+                "Type": "Selector.Pipelining",
+                "Selectors": [
+                  {
+                    "Type": "Selector.FindFirstByText",
+                    "Text": "Add to Playlist"
+                  },
+                  {
+                    "Type": "Selector.SelectClickableParent"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByText",
+              "Text": "Create new playlist"
+            }
+          }
+        ]
+      },
+      "ValidationTimeoutMS": 2000
+    },
+    {
+      "StateId": "SpotifyChoosePlaylist",
+      "Transitions": [
+        {
+          "From": "SpotifySongOption",
+          "Actions": [
+            {
+              "Type": "Action.InteractWithUser",
+              "WaitUserInput": true,
+              "SetAppVisible": true,
+              "SetAppTouchable": true,
+              "NoticeNlg": "Spotify-Select-Result.Exist.no",
+              "PostCondition": {
+                "Type": "Validator.And",
+                "Validators": [
+                  {
+                    "Type": "Validator.TargetExists",
+                    "Target": {
+                      "Type": "Selector.FindFirstByViewId",
+                      "ViewId": "seek_bar_container"
+                    }
+                  }
+                ]
+              },
+              "PostConditionTimeoutMS": 20000
+            },
+            {
+              "Type": "Action.InteractWithUser",
+              "SetAppVisible": false,
+              "SetAppTouchable": false
+            }
+          ]
+        }
+      ],
+      "Validator": {
+        "Type": "Validator.And",
+        "Validators": [
+          {
+            "Type": "Validator.TargetExists",
+            "Target": {
+              "Type": "Selector.FindFirstByViewId",
+              "ViewId": "seek_bar_container"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
